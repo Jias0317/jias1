@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            touch-action: none;
+        }
+        #gameCanvas {
+            border: 2px solid #333;
+            background-color: black;
+        }
+        #score {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        #controls {
+            display: none;
+            margin-top: 20px;
+        }
+        @media (max-width: 800px) {
+            #controls {
+                display: grid;
+                grid-template-columns: repeat(3, 60px);
+                gap: 10px;
+            }
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                background-color: rgba(128, 128, 128, 0.7);
+                border: 2px solid white;
+                color: white;
+                font-size: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                user-select: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="score">得分: 0</div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="controls">
+        <div></div>
+        <div class="control-btn" id="upBtn">↑</div>
+        <div></div>
+        <div class="control-btn" id="leftBtn">←</div>
+        <div class="control-btn" id="downBtn">↓</div>
+        <div class="control-btn" id="rightBtn">→</div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        const BLOCK_SIZE = 20;
+        const GAME_SPEED = 8;
+        let score = 0;
+        let snake = [];
+        let food = {};
+        let direction = { x: 0, y: -1 };
+        let nextDirection = { x: 0, y: -1 };
+        let gameLoop;
+
+        function init() {
+            snake = [{
+                x: Math.floor(canvas.width / 2 / BLOCK_SIZE) * BLOCK_SIZE,
+                y: Math.floor(canvas.height / 2 / BLOCK_SIZE) * BLOCK_SIZE
+            }];
+            placeFood();
+            score = 0;
+            updateScore();
+        }
+
+        function placeFood() {
+            food = {
+                x: Math.floor(Math.random() * (canvas.width / BLOCK_SIZE)) * BLOCK_SIZE,
+                y: Math.floor(Math.random() * (canvas.height / BLOCK_SIZE)) * BLOCK_SIZE
+            };
+        }
+
+        function updateScore() {
+            scoreElement.textContent = `得分: ${score}`;
+        }
+
+        function draw() {
+            // 清空画布
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 画蛇
+            ctx.fillStyle = '#00ff00';
+            snake.forEach(segment => {
+                ctx.fillRect(segment.x, segment.y, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
+            });
+
+            // 画食物
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(food.x, food.y, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
+        }
+
+        function update() {
+            direction = nextDirection;
+            const head = {
+                x: (snake[0].x + direction.x * BLOCK_SIZE + canvas.width) % canvas.width,
+                y: (snake[0].y + direction.y * BLOCK_SIZE + canvas.height) % canvas.height
+            };
+
+            // 检查是否撞到自己
+            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                init();
+                return;
+            }
+
+            snake.unshift(head);
+
+            // 检查是否吃到食物
+            if (head.x === food.x && head.y === food.y) {
+                score += 1;
+                updateScore();
+                placeFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function gameStep() {
+            update();
+            draw();
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    if (direction.y !== 1) nextDirection = { x: 0, y: -1 };
+                    break;
+                case 'ArrowDown':
+                    if (direction.y !== -1) nextDirection = { x: 0, y: 1 };
+                    break;
+                case 'ArrowLeft':
+                    if (direction.x !== 1) nextDirection = { x: -1, y: 0 };
+                    break;
+                case 'ArrowRight':
+                    if (direction.x !== -1) nextDirection = { x: 1, y: 0 };
+                    break;
+            }
+        });
+
+        // 触摸控制
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                switch (e.target.id) {
+                    case 'upBtn':
+                        if (direction.y !== 1) nextDirection = { x: 0, y: -1 };
+                        break;
+                    case 'downBtn':
+                        if (direction.y !== -1) nextDirection = { x: 0, y: 1 };
+                        break;
+                    case 'leftBtn':
+                        if (direction.x !== 1) nextDirection = { x: -1, y: 0 };
+                        break;
+                    case 'rightBtn':
+                        if (direction.x !== -1) nextDirection = { x: 1, y: 0 };
+                        break;
+                }
+            });
+        });
+
+        // 开始游戏
+        init();
+        gameLoop = setInterval(gameStep, 1000 / GAME_SPEED);
+    </script>
+</body>
+</html> 
